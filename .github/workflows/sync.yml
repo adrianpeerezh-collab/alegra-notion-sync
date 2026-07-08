@@ -27,6 +27,7 @@ jobs:
           ALEGRA_EMAIL: ${{ secrets.ALEGRA_EMAIL }}
           ALEGRA_TOKEN: ${{ secrets.ALEGRA_TOKEN }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          P1_THRESHOLD: ${{ secrets.P1_THRESHOLD }}
         run: node sync.mjs
       - name: Publicar datos del dashboard
         run: |
