@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actividad comercial — ENP</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    --bg: #ffffff; --card: #f7f7f5; --ink: #1f1f1f; --muted: #787774;
+    --line: #e9e9e7; --green: #0f6e56; --green-soft: #e1f5ee;
+    --amber: #ba7517; --amber-soft: #faeeda;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #191919; --card: #232323; --ink: #ededec; --muted: #9b9b98; --line: #2f2f2f; --green: #5dcaa5; --green-soft: #0f3d30; --amber: #efb46b; --amber-soft: #3d2f14; }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: Inter, -apple-system, sans-serif; padding: 16px; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+  .head h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .head .upd { font-size: 11px; color: var(--muted); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: var(--card); border-radius: 10px; padding: 12px 14px; }
+  .kpi .lbl { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi .val { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .kpi.green { background: var(--green-soft); } .kpi.green .val, .kpi.green .lbl { color: var(--green); }
+  .kpi.amber { background: var(--amber-soft); } .kpi.amber .val, .kpi.amber .lbl { color: var(--amber); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border-radius: 10px; padding: 12px; }
+  .card h2 { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .chart { width: 100%; height: 230px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  td { padding: 5px 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>Actividad comercial · Energía Neumática del Pacífico</h1>
+    <span class="upd" id="upd">cargando…</span>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid">
+    <div class="card"><h2>Cotizaciones por mes (enviadas vs ganadas)</h2><div class="chart" id="c-mes"></div></div>
+    <div class="card"><h2>Clientes más activos (nº de cotizaciones)</h2><div class="chart" id="c-cli"></div></div>
+    <div class="card full"><h2>Últimas cotizaciones abiertas</h2><table id="t-open"></table></div>
+  </div>
+<script>
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+async function load() {
+  const res = await fetch("data.json?t=" + Date.now());
+  const d = await res.json();
+  const muted = css("--muted"), line = css("--line");
+
+  document.getElementById("upd").textContent =
+    "actualizado " + new Date(d.generatedAt).toLocaleString("es-MX", { timeZone: "America/Hermosillo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  const k = d.kpis;
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi"><div class="lbl">Cotizaciones</div><div class="val">${k.numCotizaciones}</div><div class="sub">desde folio 70</div></div>
+    <div class="kpi green"><div class="lbl">Ganadas</div><div class="val">${k.ganadas}</div><div class="sub">facturadas 🏆</div></div>
+    <div class="kpi"><div class="lbl">Conversión</div><div class="val">${(k.tasaConversion*100).toFixed(1)}%</div><div class="sub">ganadas / enviadas</div></div>
+    <div class="kpi amber"><div class="lbl">Abiertas</div><div class="val">${k.abiertas}</div><div class="sub">en seguimiento</div></div>`;
+
+  const months = Object.keys(d.byMonth).filter(m => m !== "s/f").sort();
+  const base = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: "Inter", size: 11, color: muted },
+    margin: { l: 34, r: 8, t: 8, b: 28 }, showlegend: false,
+    xaxis: { gridcolor: "rgba(0,0,0,0)", tickfont: { color: muted } },
+    yaxis: { gridcolor: line, tickfont: { color: muted } } };
+  const cfg = { displayModeBar: false, responsive: true };
+
+  Plotly.newPlot("c-mes", [
+    { x: months, y: months.map(m => d.byMonth[m].n), type: "bar", name: "Enviadas", marker: { color: "#85b7eb" }, hovertemplate: "%{x}<br>Enviadas: %{y}<extra></extra>" },
+    { x: months, y: months.map(m => d.byMonth[m].ganadas), type: "bar", name: "Ganadas", marker: { color: "#1d9e75" }, hovertemplate: "%{x}<br>Ganadas: %{y}<extra></extra>" },
+  ], { ...base, barmode: "group" }, cfg);
+
+  const top = [...d.topClientes].slice(0, 7).reverse();
+  Plotly.newPlot("c-cli", [{
+    y: top.map(c => c.name.length > 22 ? c.name.slice(0, 21) + "…" : c.name),
+    x: top.map(c => c.n), type: "bar", orientation: "h",
+    marker: { color: "#1d9e75" }, hovertemplate: "%{y}<br>%{x} cotizaciones<extra></extra>",
+  }], { ...base, margin: { l: 150, r: 8, t: 8, b: 28 }, xaxis: { ...base.xaxis, gridcolor: line }, yaxis: { ...base.yaxis, gridcolor: "rgba(0,0,0,0)" } }, cfg);
+
+  document.getElementById("t-open").innerHTML =
+    "<tr><th>Folio</th><th>Cliente</th><th>Fecha</th></tr>" +
+    d.recientesAbiertas.map(o => `<tr><td>${o.folio}</td><td>${o.client}</td><td>${o.date ?? ""}</td></tr>`).join("");
+}
+load();
+setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>
