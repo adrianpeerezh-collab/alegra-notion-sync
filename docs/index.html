@@ -3,95 +3,318 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Actividad comercial — ENP</title>
+<title>Panel comercial — ENP</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
 <style>
   :root {
-    --bg: #ffffff; --card: #f7f7f5; --ink: #1f1f1f; --muted: #787774;
-    --line: #e9e9e7; --green: #0f6e56; --green-soft: #e1f5ee;
-    --amber: #ba7517; --amber-soft: #faeeda;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #191919; --card: #232323; --ink: #ededec; --muted: #9b9b98; --line: #2f2f2f; --green: #5dcaa5; --green-soft: #0f3d30; --amber: #efb46b; --amber-soft: #3d2f14; }
+    --bg: oklch(0.16 0.008 260);
+    --panel: oklch(0.20 0.008 260);
+    --panel-2: oklch(0.23 0.009 260);
+    --line: oklch(0.30 0.008 260);
+    --ink: oklch(0.95 0.005 260);
+    --muted: oklch(0.72 0.01 260);
+    --faint: oklch(0.42 0.01 260);
+    --green: oklch(0.72 0.14 165);
+    --green-dim: oklch(0.72 0.14 165 / 0.14);
+    --green-ink: oklch(0.85 0.1 165);
+    --amber: oklch(0.78 0.13 75);
+    --amber-dim: oklch(0.78 0.13 75 / 0.14);
+    --red: oklch(0.68 0.17 25);
+    --red-dim: oklch(0.68 0.17 25 / 0.14);
+    --blue: #6b7686;
+    --r: 12px;
   }
   * { box-sizing: border-box; margin: 0; }
-  body { background: var(--bg); color: var(--ink); font-family: Inter, -apple-system, sans-serif; padding: 16px; }
-  .head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
-  .head h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-  .head .upd { font-size: 11px; color: var(--muted); }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
-  .kpi { background: var(--card); border-radius: 10px; padding: 12px 14px; }
-  .kpi .lbl { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
-  .kpi .val { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .kpi.green { background: var(--green-soft); } .kpi.green .val, .kpi.green .lbl { color: var(--green); }
-  .kpi.amber { background: var(--amber-soft); } .kpi.amber .val, .kpi.amber .lbl { color: var(--amber); }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: var(--card); border-radius: 10px; padding: 12px; }
-  .card h2 { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
-  .chart { width: 100%; height: 230px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid var(--line); }
-  td { padding: 5px 6px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-  .full { grid-column: 1 / -1; }
+  html, body { background: var(--bg); }
+  body {
+    color: var(--ink);
+    font-family: Inter, -apple-system, "Segoe UI", sans-serif;
+    padding: clamp(12px, 2vw, 22px);
+    font-size: 13.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .mark {
+    width: 34px; height: 34px; border-radius: 9px; flex: none;
+    background: var(--panel-2); border: 1px solid var(--line);
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.02em; color: var(--green);
+  }
+  .titles { min-width: 0; }
+  .titles h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .titles p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); position: relative; flex: none; }
+  .dot.ok::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%;
+    border: 1px solid var(--green); opacity: 0; animation: pulse 2.2s ease-out infinite;
+  }
+  .dot.stale { background: var(--amber); }
+  .dot.err { background: var(--red); }
+  @keyframes pulse { 0% { transform: scale(0.4); opacity: 0.8; } 100% { transform: scale(1.4); opacity: 0; } }
+  .retry {
+    background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 7px; padding: 4px 10px; font: 500 11px Inter, sans-serif; cursor: pointer;
+  }
+  .retry:hover { border-color: var(--muted); }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .kpi {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 14px 16px 12px; position: relative; overflow: hidden; min-height: 96px;
+  }
+  .kpi .ghost {
+    position: absolute; right: 8px; bottom: -14px;
+    font-size: 74px; font-weight: 800; letter-spacing: -0.04em;
+    color: var(--faint); opacity: 0.22; line-height: 1; pointer-events: none; user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi .lbl { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .kpi .val { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; margin-top: 6px; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .kpi .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .kpi.win .val { color: var(--green); }
+  .kpi.gauge { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+  .ring { width: 66px; height: 66px; transform: rotate(-90deg); }
+  .ring .track { stroke: var(--panel-2); }
+  .ring .arc { stroke: var(--green); stroke-linecap: round; transition: stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 14px 8px; min-width: 0; }
+  .card h2 { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .card .hint { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .chart { width: 100%; height: 228px; }
+  .card.wide { grid-column: 1 / -1; padding-bottom: 6px; }
+
+  .bars { display: flex; flex-direction: column; gap: 9px; padding: 12px 2px 10px; }
+  .brow { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 10px; align-items: center; }
+  .brow .name { font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+  .brow .track { height: 7px; border-radius: 4px; background: var(--panel-2); overflow: hidden; }
+  .brow .fill { height: 100%; border-radius: 4px; background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform 650ms cubic-bezier(0.22, 1, 0.36, 1); }
+  .brow .fill.win { background: var(--green); }
+  .brow .n { font-size: 13px; font-weight: 600; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; align-self: end; padding-bottom: 0; }
+  @media (prefers-reduced-motion: reduce) { .brow .fill { transition: none; } }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 11px; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 150ms ease-out; }
+  tbody tr:hover { background: var(--panel-2); }
+  td.folio { color: var(--muted); width: 52px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.ok  { background: var(--green-dim); color: var(--green-ink); }
+  .badge.mid { background: var(--amber-dim); color: var(--amber); }
+  .badge.hot { background: var(--red-dim);  color: var(--red); }
+
+  .skl { border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .skl::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, oklch(0.28 0.008 260 / 0.5) 50%, transparent 70%);
+    animation: shimmer 1.4s linear infinite;
+  }
+  @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+  .err-box {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 28px; text-align: center; color: var(--muted); font-size: 13px;
+  }
+  .err-box strong { color: var(--ink); display: block; margin-bottom: 4px; font-weight: 600; }
+
+  footer { margin-top: 14px; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+  @media (max-width: 560px) {
+    .kpi .val { font-size: 28px; }
+    .kpi .ghost { font-size: 58px; }
+    .status .upd-full { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dot.ok::after, .skl::after { animation: none; }
+    .ring .arc, tbody tr { transition: none; }
+  }
 </style>
 </head>
 <body>
-  <div class="head">
-    <h1>Actividad comercial · Energía Neumática del Pacífico</h1>
-    <span class="upd" id="upd">cargando…</span>
+  <header>
+    <div class="mark" aria-hidden="true">EN</div>
+    <div class="titles">
+      <h1>Panel comercial</h1>
+      <p>Energía Neumática del Pacífico · Alegra → Notion</p>
+    </div>
+    <div class="status">
+      <span class="dot ok" id="dot"></span>
+      <span id="upd"><span class="upd-full">sincronizando</span>…</span>
+    </div>
+  </header>
+
+  <div id="app">
+    <div class="kpis">
+      <div class="skl" style="height:96px"></div><div class="skl" style="height:96px"></div>
+      <div class="skl" style="height:96px"></div><div class="skl" style="height:96px"></div>
+    </div>
+    <div class="grid">
+      <div class="skl" style="height:260px"></div><div class="skl" style="height:260px"></div>
+      <div class="skl wide" style="height:200px; grid-column: 1 / -1"></div>
+    </div>
   </div>
-  <div class="kpis" id="kpis"></div>
-  <div class="grid">
-    <div class="card"><h2>Cotizaciones por mes (enviadas vs ganadas)</h2><div class="chart" id="c-mes"></div></div>
-    <div class="card"><h2>Clientes más activos (nº de cotizaciones)</h2><div class="chart" id="c-cli"></div></div>
-    <div class="card full"><h2>Últimas cotizaciones abiertas</h2><table id="t-open"></table></div>
-  </div>
+
+  <footer>
+    <span>Actualización automática cada 10 minutos · solo actividad, sin montos</span>
+    <span>PneumaDev · ENP</span>
+  </footer>
+
 <script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const mesLabel = (ym) => { const [y, m] = ym.split("-"); return MESES[+m - 1] + " ’" + y.slice(2); };
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-async function load() {
-  const res = await fetch("data.json?t=" + Date.now());
-  const d = await res.json();
-  const muted = css("--muted"), line = css("--line");
+function countUp(el, target, suffix = "", decimals = 0) {
+  if (REDUCED) { el.textContent = target.toFixed(decimals) + suffix; return; }
+  const t0 = performance.now(), dur = 600;
+  (function tick(t) {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+    el.textContent = (target * e).toFixed(decimals) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
 
-  document.getElementById("upd").textContent =
-    "actualizado " + new Date(d.generatedAt).toLocaleString("es-MX", { timeZone: "America/Hermosillo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+function aging(dateStr) {
+  if (!dateStr) return { cls: "mid", txt: "sin fecha" };
+  const days = Math.max(0, Math.floor((Date.now() - new Date(dateStr + "T12:00:00-07:00")) / 864e5));
+  if (days >= 10) return { cls: "hot", txt: days + " días · urgente" };
+  if (days >= 4)  return { cls: "mid", txt: days + " días" };
+  return { cls: "ok", txt: days + (days === 1 ? " día" : " días") };
+}
+
+function setStatus(state, text) {
+  const dot = $("dot");
+  dot.className = "dot " + state;
+  $("upd").innerHTML = text;
+}
+
+async function load() {
+  let d;
+  try {
+    const res = await fetch("data.json?t=" + Date.now());
+    if (!res.ok) throw new Error(res.status);
+    d = await res.json();
+  } catch (e) {
+    setStatus("err", "sin conexión");
+    $("app").innerHTML = `<div class="err-box"><strong>No se pudieron cargar los datos</strong>
+      Revisa tu conexión e intenta de nuevo. <br><br>
+      <button class="retry" onclick="load()">Reintentar</button></div>`;
+    return;
+  }
 
   const k = d.kpis;
-  document.getElementById("kpis").innerHTML = `
-    <div class="kpi"><div class="lbl">Cotizaciones</div><div class="val">${k.numCotizaciones}</div><div class="sub">desde folio 70</div></div>
-    <div class="kpi green"><div class="lbl">Ganadas</div><div class="val">${k.ganadas}</div><div class="sub">facturadas 🏆</div></div>
-    <div class="kpi"><div class="lbl">Conversión</div><div class="val">${(k.tasaConversion*100).toFixed(1)}%</div><div class="sub">ganadas / enviadas</div></div>
-    <div class="kpi amber"><div class="lbl">Abiertas</div><div class="val">${k.abiertas}</div><div class="sub">en seguimiento</div></div>`;
+  const gen = new Date(d.generatedAt);
+  const ageMin = (Date.now() - gen) / 60000;
+  const when = gen.toLocaleString("es-MX", { timeZone: "America/Hermosillo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  setStatus(ageMin > 30 ? "stale" : "ok", `<span class="upd-full">actualizado </span>${when}`);
 
-  const months = Object.keys(d.byMonth).filter(m => m !== "s/f").sort();
-  const base = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+  const pct = k.tasaConversion * 100;
+  const C = 2 * Math.PI * 28;
+  $("app").innerHTML = `
+    <div class="kpis">
+      <div class="kpi">
+        <span class="ghost" aria-hidden="true">${k.numCotizaciones}</span>
+        <div class="lbl">Cotizaciones</div>
+        <div class="val" id="v-total">0</div>
+        <div class="sub">desde folio 70</div>
+      </div>
+      <div class="kpi win">
+        <span class="ghost" aria-hidden="true">${k.ganadas}</span>
+        <div class="lbl">Ganadas</div>
+        <div class="val" id="v-win">0</div>
+        <div class="sub">facturadas en Alegra</div>
+      </div>
+      <div class="kpi gauge">
+        <div>
+          <div class="lbl">Conversión</div>
+          <div class="val" id="v-rate">0%</div>
+          <div class="sub">ganadas / enviadas</div>
+        </div>
+        <svg class="ring" viewBox="0 0 66 66" aria-hidden="true">
+          <circle class="track" cx="33" cy="33" r="28" fill="none" stroke-width="7"/>
+          <circle class="arc" id="arc" cx="33" cy="33" r="28" fill="none" stroke-width="7"
+            stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <span class="ghost" aria-hidden="true">${k.abiertas}</span>
+        <div class="lbl">Abiertas</div>
+        <div class="val" id="v-open">0</div>
+        <div class="sub">en seguimiento activo</div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card"><h2>Actividad por mes <span class="hint">· enviadas vs ganadas</span></h2><div class="chart" id="c-mes"></div></div>
+      <div class="card"><h2>Clientes más activos <span class="hint">· nº de cotizaciones, verde = ya facturó</span></h2><div class="bars" id="c-cli"></div></div>
+      <div class="card wide">
+        <h2>Últimas abiertas <span class="hint">· el color indica días sin cerrar</span></h2>
+        <table>
+          <thead><tr><th>Folio</th><th>Cliente</th><th>Fecha</th><th>Antigüedad</th></tr></thead>
+          <tbody>${d.recientesAbiertas.map((o) => {
+            const a = aging(o.date);
+            return `<tr><td class="folio">#${o.folio}</td><td>${o.client}</td><td>${o.date ?? "—"}</td>
+              <td><span class="badge ${a.cls}"><i></i>${a.txt}</span></td></tr>`;
+          }).join("")}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  countUp($("v-total"), k.numCotizaciones);
+  countUp($("v-win"), k.ganadas);
+  countUp($("v-open"), k.abiertas);
+  countUp($("v-rate"), pct, "%", 1);
+  requestAnimationFrame(() => {
+    const arc = $("arc");
+    if (REDUCED) arc.style.transition = "none";
+    arc.style.strokeDashoffset = (C * (1 - Math.min(1, pct / 100))).toFixed(1);
+  });
+
+  const ink = css("--ink") || "#eee", muted = "#9aa0a8", line = "rgba(154,160,168,0.16)";
+  const months = Object.keys(d.byMonth).filter((m) => m !== "s/f").sort();
+  const base = {
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
     font: { family: "Inter", size: 11, color: muted },
-    margin: { l: 34, r: 8, t: 8, b: 28 }, showlegend: false,
-    xaxis: { gridcolor: "rgba(0,0,0,0)", tickfont: { color: muted } },
-    yaxis: { gridcolor: line, tickfont: { color: muted } } };
+    margin: { l: 30, r: 6, t: 6, b: 26 }, showlegend: false, barcornerradius: 3,
+    hoverlabel: { bgcolor: "#22242a", bordercolor: "#3a3d45", font: { family: "Inter", size: 12, color: ink } },
+    xaxis: { gridcolor: "rgba(0,0,0,0)", tickfont: { color: muted }, fixedrange: true },
+    yaxis: { gridcolor: line, tickfont: { color: muted }, fixedrange: true, zeroline: false },
+  };
   const cfg = { displayModeBar: false, responsive: true };
+  const GREEN = "#3fbf95", BLUE = "#6b7686";
 
   Plotly.newPlot("c-mes", [
-    { x: months, y: months.map(m => d.byMonth[m].n), type: "bar", name: "Enviadas", marker: { color: "#85b7eb" }, hovertemplate: "%{x}<br>Enviadas: %{y}<extra></extra>" },
-    { x: months, y: months.map(m => d.byMonth[m].ganadas), type: "bar", name: "Ganadas", marker: { color: "#1d9e75" }, hovertemplate: "%{x}<br>Ganadas: %{y}<extra></extra>" },
-  ], { ...base, barmode: "group" }, cfg);
+    { x: months.map(mesLabel), y: months.map((m) => d.byMonth[m].n), type: "bar", marker: { color: BLUE }, hovertemplate: "<b>%{x}</b> · enviadas: %{y}<extra></extra>" },
+    { x: months.map(mesLabel), y: months.map((m) => d.byMonth[m].ganadas), type: "bar", marker: { color: GREEN }, hovertemplate: "<b>%{x}</b> · ganadas: %{y}<extra></extra>" },
+  ], { ...base, barmode: "group", bargap: 0.35 }, cfg);
 
-  const top = [...d.topClientes].slice(0, 7).reverse();
-  Plotly.newPlot("c-cli", [{
-    y: top.map(c => c.name.length > 22 ? c.name.slice(0, 21) + "…" : c.name),
-    x: top.map(c => c.n), type: "bar", orientation: "h",
-    marker: { color: "#1d9e75" }, hovertemplate: "%{y}<br>%{x} cotizaciones<extra></extra>",
-  }], { ...base, margin: { l: 150, r: 8, t: 8, b: 28 }, xaxis: { ...base.xaxis, gridcolor: line }, yaxis: { ...base.yaxis, gridcolor: "rgba(0,0,0,0)" } }, cfg);
-
-  document.getElementById("t-open").innerHTML =
-    "<tr><th>Folio</th><th>Cliente</th><th>Fecha</th></tr>" +
-    d.recientesAbiertas.map(o => `<tr><td>${o.folio}</td><td>${o.client}</td><td>${o.date ?? ""}</td></tr>`).join("");
+  const top = d.topClientes.slice(0, 7);
+  const maxN = Math.max(...top.map((c) => c.n), 1);
+  $("c-cli").innerHTML = top.map((c) => `
+    <div class="brow" title="${c.name} · ${c.n} cotizaciones${c.ganadas ? " · " + c.ganadas + " ganadas" : ""}">
+      <div>
+        <div class="name">${c.name}</div>
+        <div class="track"><div class="fill${c.ganadas > 0 ? " win" : ""}" data-w="${(c.n / maxN).toFixed(3)}"></div></div>
+      </div>
+      <div class="n">${c.n}</div>
+    </div>`).join("");
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll("#c-cli .fill").forEach((f) => { f.style.transform = `scaleX(${f.dataset.w})`; });
+  }));
 }
 load();
 setInterval(load, 5 * 60 * 1000);
