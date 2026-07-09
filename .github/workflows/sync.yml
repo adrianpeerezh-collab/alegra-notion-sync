@@ -2,8 +2,9 @@ name: Sync Alegra → Notion
 
 on:
   schedule:
-    # Cada 10 minutos (GitHub puede agregar unos minutos de jitter en horas pico)
-    - cron: "*/10 * * * *"
+    # Cada 10 min en minutos "impares" (7,17,...) — los minutos :00/:10 redondos
+    # son los más congestionados en GitHub y sufren los mayores retrasos
+    - cron: "7,17,27,37,47,57 * * * *"
   workflow_dispatch: {}
 
 concurrency:

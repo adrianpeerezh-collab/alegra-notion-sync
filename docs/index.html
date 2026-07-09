@@ -224,7 +224,7 @@ async function load() {
   if (ageMin > 120) {
     setStatus("err", `⚠ sync detenido — último dato: ${when}`);
   } else {
-    setStatus(ageMin > 30 ? "stale" : "ok", `<span class="upd-full">actualizado </span>${when}`);
+    setStatus(ageMin > 45 ? "stale" : "ok", `<span class="upd-full">actualizado </span>${when}`);
   }
 
   const pct = k.tasaConversion * 100;
