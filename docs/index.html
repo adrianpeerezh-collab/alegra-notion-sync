@@ -221,7 +221,11 @@ async function load() {
   const gen = new Date(d.generatedAt);
   const ageMin = (Date.now() - gen) / 60000;
   const when = gen.toLocaleString("es-MX", { timeZone: "America/Hermosillo", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  setStatus(ageMin > 30 ? "stale" : "ok", `<span class="upd-full">actualizado </span>${when}`);
+  if (ageMin > 120) {
+    setStatus("err", `⚠ sync detenido — último dato: ${when}`);
+  } else {
+    setStatus(ageMin > 30 ? "stale" : "ok", `<span class="upd-full">actualizado </span>${when}`);
+  }
 
   const pct = k.tasaConversion * 100;
   const C = 2 * Math.PI * 28;
