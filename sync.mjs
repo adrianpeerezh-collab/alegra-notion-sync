@@ -102,6 +102,34 @@ function temasOf(est) {
   return temas;
 }
 
+/**
+ * Lee el esquema de la base y resuelve nombres de propiedades.
+ * La propiedad de estado se detecta por TIPO (única de tipo "status"), así
+ * un renombre en Notion no rompe el sync (lección: "Estado de la cotización"
+ * fue renombrada a "Status" el 2026-07-10 y tumbó las corridas).
+ * Las demás se verifican por nombre y se reporta con claridad si falta una.
+ */
+let STATUS_PROP = "Status";
+async function resolveSchema() {
+  const res = await fetchRetry(`https://api.notion.com/v1/data_sources/${NOTION_DATA_SOURCE_ID}`, { headers: notionHeaders });
+  const props = (await res.json()).properties ?? {};
+  const statusProps = Object.entries(props).filter(([, p]) => p.type === "status");
+  if (statusProps.length !== 1) {
+    console.error(`Se esperaba exactamente 1 propiedad de tipo status; hay ${statusProps.length}.`);
+    process.exit(1);
+  }
+  STATUS_PROP = statusProps[0][0];
+  console.log(`Propiedad de estado detectada: "${STATUS_PROP}"`);
+
+  const required = ["Folio", "Objetivo", "Cliente", "Link Alegra", "Temas", "Prioridad", "Responsable", "Colaboradores", "Contacto", "Fecha de Creación"];
+  const missing = required.filter((n) => !props[n]);
+  if (missing.length) {
+    console.error(`FALTAN propiedades en Notion (¿alguien las renombró?): ${missing.join(", ")}. ` +
+      `El sync espera esos nombres exactos; renómbralas de vuelta o actualiza sync.mjs.`);
+    process.exit(1);
+  }
+}
+
 /** Todas las páginas de Notion con Folio: Map folio → {id, estado, monto, link, temas} */
 async function fetchNotionPages() {
   const byFolio = new Map();
@@ -120,7 +148,7 @@ async function fetchNotionPages() {
       if (typeof folio !== "number") continue;
       byFolio.set(folio, {
         id: page.id,
-        estado: p["Estado de la cotización"]?.status?.name ?? null,
+        estado: p[STATUS_PROP]?.status?.name ?? null,
         link: p["Link Alegra"]?.url ?? null,
         temas: (p["Temas"]?.multi_select ?? []).map((t) => t.name),
         cliente: p["Cliente"]?.select?.name ?? null,
@@ -145,7 +173,7 @@ function buildProperties(est, folio, { forCreate }) {
   if (forCreate) {
     props["Objetivo"] = { title: [{ text: { content: `Cotización | ${clientName}` } }] };
     props["Folio"] = { number: folio };
-    props["Estado de la cotización"] = { status: { name: isBilled(est) ? "Cerrada 🙌" : "Enviado" } };
+    props[STATUS_PROP] = { status: { name: isBilled(est) ? "Cerrada 🙌" : "Enviado" } };
     props["Responsable"] = { select: { name: sellerName } };
     props["Colaboradores"] = { multi_select: [{ name: sellerName }] };
     props["Prioridad"] = { select: { name: total >= P1_THRESHOLD ? "P1 🔥" : "P2" } };
@@ -229,6 +257,7 @@ function buildDashboardData(estimates) {
 async function main() {
   console.log(`Sync Alegra → Notion v2${DRY_RUN ? " (dry-run)" : ""}`);
 
+  await resolveSchema();
   const [estimates, notionPages] = await Promise.all([fetchAllEstimates(), fetchNotionPages()]);
   console.log(`Alegra: ${estimates.length} cotizaciones | Notion: ${notionPages.size} folios`);
 
@@ -251,7 +280,7 @@ async function main() {
       if (!existing.link) patch["Link Alegra"] = { url: `https://app.alegra.com/estimate/view/id/${est.id}` };
       if (!existing.cliente) patch["Cliente"] = { select: { name: clienteOf(est) } };
       if (isBilled(est) && existing.estado !== "Cerrada 🙌" && existing.estado !== "Perdida") {
-        patch["Estado de la cotización"] = { status: { name: "Cerrada 🙌" } };
+        patch[STATUS_PROP] = { status: { name: "Cerrada 🙌" } };
       }
       if (existing.temas.length === 0) {
         const temas = temasOf(est);
