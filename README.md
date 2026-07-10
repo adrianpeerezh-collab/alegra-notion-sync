@@ -1,4 +1,4 @@
-# Sync Alegra → Notion (cotizaciones ENP)
+# Sync Alegra → Notion 
 
 Reemplaza el Zap de Zapier que se atoraba. Cada 10 minutos, GitHub Actions corre
 `sync.mjs`, que compara **todas** las cotizaciones de Alegra contra **todos**
